@@ -61,6 +61,7 @@ export default function LoginPage() {
             <input
               type="email"
               id="username"
+              name="username"
               required
               className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--acento-lupulo)]"
               style={{ borderColor: "rgba(0,0,0,0.15)" }}
@@ -78,6 +79,7 @@ export default function LoginPage() {
             <input
               type="password"
               id="password"
+              name="password"
               required
               className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--acento-lupulo)]"
               style={{ borderColor: "rgba(0,0,0,0.15)" }}
