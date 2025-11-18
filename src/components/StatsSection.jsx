@@ -11,7 +11,7 @@ export default function StatsSection() {
           </div>
 
           <div>
-            <div className="stat-number">8</div>
+            <div className="stat-number">10</div>
             <p className="text-[var(--blanco-puro)]">Años de Experiencia</p>
           </div>
 
