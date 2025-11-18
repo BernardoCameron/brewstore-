@@ -64,7 +64,7 @@ export default function ProductosPage() {
         .order("id", { ascending: true });
 
       if (error) {
-        console.error("❌ Error al obtener categorías:", error);
+        console.error("Error al obtener categorías:", error);
       } else {
         setCategorias(data || []);
       }
@@ -199,7 +199,7 @@ export default function ProductosPage() {
                       className="btn-primary-custom text-sm px-4 py-2 rounded-full font-semibold"
                       title="Añadir al carrito"
                     >
-                      🛒 Añadir
+                    Añadir
                     </button>
                   </div>
                 </div>
