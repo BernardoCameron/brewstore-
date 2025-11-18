@@ -14,7 +14,7 @@ export default function ContactSection() {
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                alert("Mensaje enviado con éxito 🍻");
+                alert("Mensaje enviado con éxito");
               }}
             >
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -80,29 +80,18 @@ export default function ContactSection() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="card-custom text-center p-6 h-full">
-            <MapPin
-              className="mx-auto mb-3"
-              size={36}
-              color="var(--primario-amber)"
-            />
-            <h5 className="font-semibold text-[var(--blanco-puro)]">
-              Ubicación
-            </h5>
+            <MapPin className="mx-auto mb-3" size={36} color="var(--primario-amber)" />
+            <h5 className="font-semibold text-[var(--blanco-puro)]">Ubicación</h5>
             <p className="text-[var(--texto-secundario)] mt-2">
-              Calle Cervecera 123<br />
+              Calle Cervecera 123
+              <br />
               Ciudad Artesanal, CA 12345
             </p>
           </div>
 
           <div className="card-custom text-center p-6 h-full">
-            <Phone
-              className="mx-auto mb-3"
-              size={36}
-              color="var(--primario-amber)"
-            />
-            <h5 className="font-semibold text-[var(--blanco-puro)]">
-              Teléfono
-            </h5>
+            <Phone className="mx-auto mb-3" size={36} color="var(--primario-amber)" />
+            <h5 className="font-semibold text-[var(--blanco-puro)]">Teléfono</h5>
             <p className="text-[var(--texto-secundario)] mt-2">
               +56 9 1234 5678
               <br />
@@ -111,11 +100,7 @@ export default function ContactSection() {
           </div>
 
           <div className="card-custom text-center p-6 h-full">
-            <Mail
-              className="mx-auto mb-3"
-              size={36}
-              color="var(--primario-amber)"
-            />
+            <Mail className="mx-auto mb-3" size={36} color="var(--primario-amber)" />
             <h5 className="font-semibold text-[var(--blanco-puro)]">Email</h5>
             <p className="text-[var(--texto-secundario)] mt-2">
               info@brewstore.com
