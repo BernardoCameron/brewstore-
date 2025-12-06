@@ -2,13 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
-import { createClient } from "@supabase/supabase-js";
 import { useCart } from "@/context/CartContext";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-);
 
 export default function ProductosPage() {
   const [productos, setProductos] = useState([]);
@@ -24,49 +18,71 @@ export default function ProductosPage() {
   const [paginaActual, setPaginaActual] = useState(1);
   const productosPorPagina = 6;
 
-  // obtener productos
+  // obtener productos desde el endpoint
   useEffect(() => {
     async function fetchProductos() {
       setLoading(true);
 
-      let query = supabase.from("producto").select("*").order("id", { ascending: true });
+      try {
+        const params = new URLSearchParams();
 
-      if (categoriaSeleccionada) {
-        query = query.eq("categoria", categoriaSeleccionada.trim());
-      }
+        if (categoriaSeleccionada) {
+          params.set("categoria", categoriaSeleccionada.trim());
+        }
 
-      const { data, error } = await query;
+        const queryString = params.toString();
+        const url = queryString ? `/api/v1/productos?${queryString}` : `/api/v1/productos`;
 
-      if (error) {
-        console.error("Error al obtener productos:", error);
-      } else {
-        setProductos(data || []);
+        const res = await fetch(url);
 
-        // inicializamos las cantidades en 1
+        if (!res.ok) {
+          console.error("Error HTTP al obtener productos:", res.statusText);
+          setProductos([]);
+          setCantidades({});
+          setLoading(false);
+          setPaginaActual(1);
+          return;
+        }
+
+        const json = await res.json();
+        const data = json.data || [];
+
+        setProductos(data);
+
+        // inicializamos las cantidades en 1 (igual que antes)
         const inicial = {};
-        data?.forEach((p) => (inicial[p.id] = 1));
+        data.forEach((p) => {
+          inicial[p.id] = 1;
+        });
         setCantidades(inicial);
+      } catch (error) {
+        console.error("Error al obtener productos:", error);
+        setProductos([]);
+        setCantidades({});
+      } finally {
+        setLoading(false);
+        setPaginaActual(1);
       }
-
-      setLoading(false);
-      setPaginaActual(1);
     }
 
     fetchProductos();
   }, [categoriaSeleccionada]);
 
   // obtener categorías
+  // obtener categorías desde el endpoint
   useEffect(() => {
     async function fetchCategorias() {
-      const { data, error } = await supabase
-        .from("categoria")
-        .select("*")
-        .order("id", { ascending: true });
+      try {
+        const res = await fetch("/api/v1/categorias");
+        if (!res.ok) {
+          throw new Error("Error HTTP al obtener categorías");
+        }
 
-      if (error) {
-        console.error("Error al obtener categorías:", error);
-      } else {
+        const data = await res.json();
         setCategorias(data || []);
+      } catch (error) {
+        console.error("Error al obtener categorías:", error);
+        setCategorias([]);
       }
     }
 
