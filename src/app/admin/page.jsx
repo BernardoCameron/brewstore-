@@ -33,6 +33,7 @@ export default function AdminPage() {
   const [editingCategoriaId, setEditingCategoriaId] = useState(null);
 
   const [mensaje, setMensaje] = useState("");
+  const [uploadingImagen, setUploadingImagen] = useState(false);
 
   // Cargar datos iniciales
   useEffect(() => {
@@ -67,6 +68,43 @@ export default function AdminPage() {
     }));
   }
 
+  async function handleImagenFileChange(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingImagen(true);
+    setMensaje("");
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch("/api/v1/imagenes", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        throw new Error("Error HTTP al subir imagen");
+      }
+
+      const data = await res.json();
+
+      // guardamos la URL en el formulario de producto
+      setProductoForm((prev) => ({
+        ...prev,
+        imagen: data.url,
+      }));
+
+      setMensaje("Imagen subida correctamente.");
+    } catch (error) {
+      console.error(error);
+      setMensaje("Ocurrió un error al subir la imagen.");
+    } finally {
+      setUploadingImagen(false);
+    }
+  }
+
   function startNuevoProducto() {
     setProductoForm(EMPTY_PRODUCTO);
     setEditingProductoId(null);
@@ -92,11 +130,12 @@ export default function AdminPage() {
     const payload = {
       ...productoForm,
       precio: Number(productoForm.precio) || 0,
-      categoria: productoForm.categoria === "" ? null : Number(productoForm.categoria),
+      categoria: productoForm.categoria === "" ? null : productoForm.categoria,
     };
 
     try {
       let res;
+
       if (editingProductoId) {
         res = await fetch(`/api/v1/productos/${editingProductoId}`, {
           method: "PUT",
@@ -111,8 +150,14 @@ export default function AdminPage() {
         });
       }
 
+      const result = await res.json().catch(() => null);
+
       if (!res.ok) {
-        throw new Error("Error al guardar el producto");
+        console.error("Error al guardar producto:", result);
+        setMensaje(
+          result?.message || result?.supabaseError || "Ocurrió un error al guardar el producto."
+        );
+        return;
       }
 
       setMensaje(
@@ -123,7 +168,7 @@ export default function AdminPage() {
       await fetchProductos();
     } catch (error) {
       console.error(error);
-      setMensaje("Ocurrió un error al guardar el producto.");
+      setMensaje("Ocurrió un error al guardar el producto (excepción).");
     }
   }
 
@@ -192,6 +237,7 @@ export default function AdminPage() {
 
     try {
       let res;
+
       if (editingCategoriaId) {
         res = await fetch(`/api/v1/categorias/${editingCategoriaId}`, {
           method: "PUT",
@@ -206,8 +252,14 @@ export default function AdminPage() {
         });
       }
 
+      const result = await res.json().catch(() => null);
+
       if (!res.ok) {
-        throw new Error("Error al guardar la categoría");
+        console.error("Error al guardar categoría:", result);
+        setMensaje(
+          result?.message || result?.supabaseError || "Ocurrió un error al guardar la categoría."
+        );
+        return;
       }
 
       setMensaje(
@@ -220,7 +272,7 @@ export default function AdminPage() {
       await fetchCategorias();
     } catch (error) {
       console.error(error);
-      setMensaje("Ocurrió un error al guardar la categoría.");
+      setMensaje("Ocurrió un error al guardar la categoría (excepción).");
     }
   }
 
@@ -408,15 +460,37 @@ export default function AdminPage() {
               </div>
 
               <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium">Imagen (URL)</label>
+                <label className="text-sm font-medium">Imagen del producto</label>
+
+                {/* subir archivo */}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImagenFileChange}
+                  className="text-sm"
+                />
+                {uploadingImagen && (
+                  <span className="text-xs text-[var(--texto-secundario)]">Subiendo imagen...</span>
+                )}
+
+                {/* URL resultante */}
                 <input
                   type="text"
                   name="imagen"
                   value={productoForm.imagen}
                   onChange={handleProductoChange}
-                  className="border rounded px-2 py-1 text-sm"
-                  placeholder="/mi-imagen.png"
+                  className="border rounded px-2 py-1 text-sm mt-1"
+                  placeholder="URL de la imagen subida"
                 />
+
+                {/* preview opcional */}
+                {productoForm.imagen && (
+                  <img
+                    src={productoForm.imagen}
+                    alt="Preview producto"
+                    className="mt-2 h-20 w-auto object-cover border rounded"
+                  />
+                )}
               </div>
 
               <div className="md:col-span-2 flex flex-col gap-1">
