@@ -20,9 +20,11 @@ export default function AdminPage() {
 
   const [productos, setProductos] = useState([]);
   const [categorias, setCategorias] = useState([]);
+  const [usuarios, setUsuarios] = useState([]);
 
   const [loadingProductos, setLoadingProductos] = useState(false);
   const [loadingCategorias, setLoadingCategorias] = useState(false);
+  const [loadingUsuarios, setLoadingUsuarios] = useState(false);
 
   const [productoForm, setProductoForm] = useState(EMPTY_PRODUCTO);
   const [editingProductoId, setEditingProductoId] = useState(null);
@@ -36,6 +38,7 @@ export default function AdminPage() {
   useEffect(() => {
     fetchProductos();
     fetchCategorias();
+    fetchUsuarios();
   }, []);
 
   // --------- PRODUCTOS ---------
@@ -74,7 +77,7 @@ export default function AdminPage() {
     setProductoForm({
       nombre: prod.nombre || "",
       precio: prod.precio?.toString() || "",
-      categoria: prod.categoria || "",
+      categoria: prod.categoria?.toString() || "",
       descripcion: prod.descripcion || "",
       imagen: prod.imagen || "",
     });
@@ -89,19 +92,18 @@ export default function AdminPage() {
     const payload = {
       ...productoForm,
       precio: Number(productoForm.precio) || 0,
+      categoria: productoForm.categoria === "" ? null : Number(productoForm.categoria),
     };
 
     try {
       let res;
       if (editingProductoId) {
-        // UPDATE
         res = await fetch(`/api/v1/productos/${editingProductoId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
       } else {
-        // CREATE
         res = await fetch("/api/v1/productos", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -191,14 +193,12 @@ export default function AdminPage() {
     try {
       let res;
       if (editingCategoriaId) {
-        // UPDATE
         res = await fetch(`/api/v1/categorias/${editingCategoriaId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
       } else {
-        // CREATE
         res = await fetch("/api/v1/categorias", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -240,6 +240,69 @@ export default function AdminPage() {
     }
   }
 
+  // --------- USUARIOS ---------
+
+  async function fetchUsuarios() {
+    setLoadingUsuarios(true);
+    try {
+      const res = await fetch("/api/v1/usuarios");
+      if (!res.ok) throw new Error("Error HTTP al obtener usuarios");
+      const data = await res.json();
+      setUsuarios(data || []);
+    } catch (error) {
+      console.error(error);
+      setUsuarios([]);
+      setMensaje("Error al cargar usuarios.");
+    } finally {
+      setLoadingUsuarios(false);
+    }
+  }
+
+  async function handleCambiarRol(usuario) {
+    const nuevoAdmin = !usuario.admin;
+
+    try {
+      const res = await fetch(`/api/v1/usuarios/${usuario.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ admin: nuevoAdmin }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Error al cambiar rol");
+      }
+
+      setMensaje("Rol actualizado correctamente.");
+
+      setUsuarios((prev) =>
+        prev.map((u) => (u.id === usuario.id ? { ...u, admin: nuevoAdmin } : u))
+      );
+    } catch (error) {
+      console.error(error);
+      setMensaje("Ocurrió un error al cambiar el rol del usuario.");
+    }
+  }
+
+  async function handleEliminarUsuario(usuario) {
+    if (!window.confirm(`¿Seguro que deseas eliminar al usuario ${usuario.email}?`)) return;
+
+    try {
+      const res = await fetch(`/api/v1/usuarios/${usuario.id}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        throw new Error("Error al eliminar usuario");
+      }
+
+      setMensaje("Usuario eliminado correctamente.");
+      setUsuarios((prev) => prev.filter((u) => u.id !== usuario.id));
+    } catch (error) {
+      console.error(error);
+      setMensaje("Ocurrió un error al eliminar el usuario.");
+    }
+  }
+
   // --------- RENDER ---------
 
   return (
@@ -247,7 +310,7 @@ export default function AdminPage() {
       className="py-10 px-4"
       style={{ backgroundColor: "var(--bg-principal)", color: "var(--texto-principal)" }}
     >
-      <div className="max-w-5xl mx-auto bg-white shadow-lg rounded-xl p-6">
+      <div className="max-w-5xl mx-auto bg-white shadow-lg rounded-xl p-6 mb-10">
         <h1 className="text-2xl font-bold mb-4" style={{ color: "var(--secundario-malta)" }}>
           Panel de administración
         </h1>
@@ -274,6 +337,16 @@ export default function AdminPage() {
           >
             Categorías
           </button>
+          <button
+            onClick={() => setActiveTab("usuarios")}
+            className={`px-4 py-2 text-sm font-medium border-b-2 ${
+              activeTab === "usuarios"
+                ? "border-[var(--primario-amber)] text-[var(--secundario-malta)]"
+                : "border-transparent text-[var(--texto-secundario)]"
+            }`}
+          >
+            Usuarios
+          </button>
         </div>
 
         {mensaje && (
@@ -282,9 +355,9 @@ export default function AdminPage() {
           </div>
         )}
 
-        {activeTab === "productos" ? (
+        {/* --- TAB PRODUCTOS --- */}
+        {activeTab === "productos" && (
           <section>
-            {/* Formulario producto */}
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-lg font-semibold">Gestión de productos</h2>
               <button
@@ -323,14 +396,14 @@ export default function AdminPage() {
               </div>
 
               <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium">Categoría</label>
+                <label className="text-sm font-medium">Categoría (ID)</label>
                 <input
-                  type="text"
+                  type="number"
                   name="categoria"
                   value={productoForm.categoria}
                   onChange={handleProductoChange}
                   className="border rounded px-2 py-1 text-sm"
-                  placeholder="Ej: IPA, Stout..."
+                  placeholder="Ej: 1, 2, 3..."
                 />
               </div>
 
@@ -371,7 +444,6 @@ export default function AdminPage() {
               </div>
             </form>
 
-            {/* Lista de productos */}
             {loadingProductos ? (
               <p>Cargando productos...</p>
             ) : productos.length === 0 ? (
@@ -430,9 +502,11 @@ export default function AdminPage() {
               </div>
             )}
           </section>
-        ) : (
+        )}
+
+        {/* --- TAB CATEGORÍAS --- */}
+        {activeTab === "categorias" && (
           <section>
-            {/* Formulario categoría */}
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-lg font-semibold">Gestión de categorías</h2>
               <button
@@ -484,7 +558,6 @@ export default function AdminPage() {
               </div>
             </form>
 
-            {/* Lista de categorías */}
             {loadingCategorias ? (
               <p>Cargando categorías...</p>
             ) : categorias.length === 0 ? (
@@ -524,6 +597,69 @@ export default function AdminPage() {
                             <button
                               type="button"
                               onClick={() => handleEliminarCategoria(cat.id)}
+                              className="px-2 py-1 rounded text-xs"
+                              style={{
+                                backgroundColor: "var(--error)",
+                                color: "var(--blanco-puro)",
+                              }}
+                            >
+                              Eliminar
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* --- TAB USUARIOS --- */}
+        {activeTab === "usuarios" && (
+          <section>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-lg font-semibold">Gestión de usuarios</h2>
+            </div>
+
+            {loadingUsuarios ? (
+              <p>Cargando usuarios...</p>
+            ) : usuarios.length === 0 ? (
+              <p className="text-sm text-[var(--texto-secundario)]">No hay usuarios registrados.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm border">
+                  <thead>
+                    <tr className="text-left" style={{ backgroundColor: "var(--bg-principal)" }}>
+                      <th className="p-2 border">Nombre</th>
+                      <th className="p-2 border">Correo</th>
+                      <th className="p-2 border">Rol</th>
+                      <th className="p-2 border">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {usuarios.map((u) => (
+                      <tr key={u.id} className="border-t">
+                        <td className="p-2 border">{u.username || "-"}</td>
+                        <td className="p-2 border">{u.email}</td>
+                        <td className="p-2 border">{u.admin ? "Admin" : "Cliente"}</td>
+                        <td className="p-2 border">
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleCambiarRol(u)}
+                              className="px-2 py-1 rounded text-xs"
+                              style={{
+                                backgroundColor: "var(--primario-amber)",
+                                color: "var(--secundario-malta)",
+                              }}
+                            >
+                              {u.admin ? "Hacer cliente" : "Hacer admin"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleEliminarUsuario(u)}
                               className="px-2 py-1 rounded text-xs"
                               style={{
                                 backgroundColor: "var(--error)",
