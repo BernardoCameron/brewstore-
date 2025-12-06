@@ -17,13 +17,15 @@ const geistMono = Geist_Mono({
 
 export const metadata = {
   title: "BrewStore",
-  description: "BrewStore – Next.js + TailwindCSS | Bernardo Cameron",
+  description: "Tienda de cervezas artesanales| Bernardo Cameron",
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="es">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col bg-[var(--bg-principal)]`}
+      >
         <CartProvider>
           <Navbar />
           <CartDrawer />

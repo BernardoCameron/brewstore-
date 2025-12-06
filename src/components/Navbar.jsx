@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ShoppingCart } from "lucide-react";
-import supabase from "@/lib/supabaseClient";
+import supabase from "@/lib/supabaseClient"; // ⬅️ si tu archivo se llama distinto, ajusta este import
 import { useCart } from "@/context/CartContext";
 
 export default function Navbar() {
@@ -15,19 +15,36 @@ export default function Navbar() {
 
   useEffect(() => {
     const fetchUser = async () => {
-      const { data: sessionData } = await supabase.auth.getSession();
+      // 1. Obtenemos la sesión actual
+      const { data: sessionData, error } = await supabase.auth.getSession();
+
+      if (error) {
+        console.error("Error obteniendo sesión:", error.message);
+        setUser(null);
+        setIsAdmin(false);
+        return;
+      }
+
       const session = sessionData?.session;
+
       if (session?.user) {
-        setUser(session.user);
+        const currentUser = session.user;
+        setUser(currentUser);
 
-        const { data: roleData } = await supabase
-          .from("user_roles")
+        // 2. Buscamos el perfil en la tabla "perfiles" SIN .single()
+        const { data: perfilesData, error: perfilError } = await supabase
+          .from("perfiles")
           .select("admin")
-          .eq("user_id", session.user.id)
-          .single();
+          .eq("user_id", currentUser.id)
+          .limit(1); // devolvemos a lo más 1 fila
 
-        if (roleData?.admin) setIsAdmin(true);
-        else setIsAdmin(false);
+        if (perfilError) {
+          console.error("Error obteniendo perfil:", perfilError.message);
+          setIsAdmin(false);
+        } else {
+          const row = perfilesData?.[0]; // puede ser undefined si no hay filas
+          setIsAdmin(!!row?.admin); // true si admin === true, false en cualquier otro caso
+        }
       } else {
         setUser(null);
         setIsAdmin(false);
@@ -40,7 +57,7 @@ export default function Navbar() {
       fetchUser();
     });
 
-    return () => listener.subscription.unsubscribe();
+    return () => listener?.subscription?.unsubscribe?.();
   }, []);
 
   const handleLogout = async () => {
@@ -59,7 +76,7 @@ export default function Navbar() {
           <span className="text-2xl font-bold text-[var(--blanco-puro)]">BrewStore</span>
         </Link>
 
-        {/* btn hamburguesa*/}
+        {/* Botón hamburguesa */}
         <button
           onClick={() => setIsOpen(!isOpen)}
           className="text-[var(--blanco-puro)] md:hidden focus:outline-none"
@@ -120,7 +137,7 @@ export default function Navbar() {
               Contacto
             </Link>
 
-            {/* mostrar boton de admin */}
+            {/* Botón de Administración SOLO si admin = true en perfiles */}
             {isAdmin && (
               <Link
                 href="/admin"
@@ -131,7 +148,7 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* botones derecha */}
+          {/* Botones derecha */}
           <div className="flex justify-center md:justify-start items-center space-x-3 mt-3 md:mt-0 md:ml-6">
             {!user ? (
               <Link href="/login">

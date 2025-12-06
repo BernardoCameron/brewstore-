@@ -1,0 +1,548 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
+const EMPTY_PRODUCTO = {
+  nombre: "",
+  precio: "",
+  categoria: "",
+  descripcion: "",
+  imagen: "",
+};
+
+const EMPTY_CATEGORIA = {
+  nombre: "",
+  descripcion: "",
+};
+
+export default function AdminPage() {
+  const [activeTab, setActiveTab] = useState("productos");
+
+  const [productos, setProductos] = useState([]);
+  const [categorias, setCategorias] = useState([]);
+
+  const [loadingProductos, setLoadingProductos] = useState(false);
+  const [loadingCategorias, setLoadingCategorias] = useState(false);
+
+  const [productoForm, setProductoForm] = useState(EMPTY_PRODUCTO);
+  const [editingProductoId, setEditingProductoId] = useState(null);
+
+  const [categoriaForm, setCategoriaForm] = useState(EMPTY_CATEGORIA);
+  const [editingCategoriaId, setEditingCategoriaId] = useState(null);
+
+  const [mensaje, setMensaje] = useState("");
+
+  // Cargar datos iniciales
+  useEffect(() => {
+    fetchProductos();
+    fetchCategorias();
+  }, []);
+
+  // --------- PRODUCTOS ---------
+
+  async function fetchProductos() {
+    setLoadingProductos(true);
+    try {
+      const res = await fetch("/api/v1/productos");
+      if (!res.ok) throw new Error("Error HTTP al obtener productos");
+      const json = await res.json();
+      setProductos(json.data || []);
+    } catch (error) {
+      console.error(error);
+      setProductos([]);
+      setMensaje("Error al cargar productos.");
+    } finally {
+      setLoadingProductos(false);
+    }
+  }
+
+  function handleProductoChange(e) {
+    const { name, value } = e.target;
+    setProductoForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  }
+
+  function startNuevoProducto() {
+    setProductoForm(EMPTY_PRODUCTO);
+    setEditingProductoId(null);
+    setMensaje("");
+  }
+
+  function startEditarProducto(prod) {
+    setProductoForm({
+      nombre: prod.nombre || "",
+      precio: prod.precio?.toString() || "",
+      categoria: prod.categoria || "",
+      descripcion: prod.descripcion || "",
+      imagen: prod.imagen || "",
+    });
+    setEditingProductoId(prod.id);
+    setMensaje("");
+  }
+
+  async function handleProductoSubmit(e) {
+    e.preventDefault();
+    setMensaje("");
+
+    const payload = {
+      ...productoForm,
+      precio: Number(productoForm.precio) || 0,
+    };
+
+    try {
+      let res;
+      if (editingProductoId) {
+        // UPDATE
+        res = await fetch(`/api/v1/productos/${editingProductoId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      } else {
+        // CREATE
+        res = await fetch("/api/v1/productos", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      }
+
+      if (!res.ok) {
+        throw new Error("Error al guardar el producto");
+      }
+
+      setMensaje(
+        editingProductoId ? "Producto actualizado correctamente." : "Producto creado correctamente."
+      );
+      setProductoForm(EMPTY_PRODUCTO);
+      setEditingProductoId(null);
+      await fetchProductos();
+    } catch (error) {
+      console.error(error);
+      setMensaje("Ocurrió un error al guardar el producto.");
+    }
+  }
+
+  async function handleEliminarProducto(id) {
+    if (!window.confirm("¿Seguro que deseas eliminar este producto?")) return;
+
+    try {
+      const res = await fetch(`/api/v1/productos/${id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Error al eliminar producto");
+      setMensaje("Producto eliminado correctamente.");
+      await fetchProductos();
+    } catch (error) {
+      console.error(error);
+      setMensaje("Ocurrió un error al eliminar el producto.");
+    }
+  }
+
+  // --------- CATEGORÍAS ---------
+
+  async function fetchCategorias() {
+    setLoadingCategorias(true);
+    try {
+      const res = await fetch("/api/v1/categorias");
+      if (!res.ok) throw new Error("Error HTTP al obtener categorías");
+      const data = await res.json();
+      setCategorias(data || []);
+    } catch (error) {
+      console.error(error);
+      setCategorias([]);
+      setMensaje("Error al cargar categorías.");
+    } finally {
+      setLoadingCategorias(false);
+    }
+  }
+
+  function handleCategoriaChange(e) {
+    const { name, value } = e.target;
+    setCategoriaForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  }
+
+  function startNuevaCategoria() {
+    setCategoriaForm(EMPTY_CATEGORIA);
+    setEditingCategoriaId(null);
+    setMensaje("");
+  }
+
+  function startEditarCategoria(cat) {
+    setCategoriaForm({
+      nombre: cat.nombre || "",
+      descripcion: cat.descripcion || "",
+    });
+    setEditingCategoriaId(cat.id);
+    setMensaje("");
+  }
+
+  async function handleCategoriaSubmit(e) {
+    e.preventDefault();
+    setMensaje("");
+
+    const payload = { ...categoriaForm };
+
+    try {
+      let res;
+      if (editingCategoriaId) {
+        // UPDATE
+        res = await fetch(`/api/v1/categorias/${editingCategoriaId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      } else {
+        // CREATE
+        res = await fetch("/api/v1/categorias", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      }
+
+      if (!res.ok) {
+        throw new Error("Error al guardar la categoría");
+      }
+
+      setMensaje(
+        editingCategoriaId
+          ? "Categoría actualizada correctamente."
+          : "Categoría creada correctamente."
+      );
+      setCategoriaForm(EMPTY_CATEGORIA);
+      setEditingCategoriaId(null);
+      await fetchCategorias();
+    } catch (error) {
+      console.error(error);
+      setMensaje("Ocurrió un error al guardar la categoría.");
+    }
+  }
+
+  async function handleEliminarCategoria(id) {
+    if (!window.confirm("¿Seguro que deseas eliminar esta categoría?")) return;
+
+    try {
+      const res = await fetch(`/api/v1/categorias/${id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Error al eliminar categoría");
+      setMensaje("Categoría eliminada correctamente.");
+      await fetchCategorias();
+    } catch (error) {
+      console.error(error);
+      setMensaje("Ocurrió un error al eliminar la categoría.");
+    }
+  }
+
+  // --------- RENDER ---------
+
+  return (
+    <section
+      className="py-10 px-4"
+      style={{ backgroundColor: "var(--bg-principal)", color: "var(--texto-principal)" }}
+    >
+      <div className="max-w-5xl mx-auto bg-white shadow-lg rounded-xl p-6">
+        <h1 className="text-2xl font-bold mb-4" style={{ color: "var(--secundario-malta)" }}>
+          Panel de administración
+        </h1>
+
+        {/* Tabs */}
+        <div className="flex gap-2 border-b mb-4">
+          <button
+            onClick={() => setActiveTab("productos")}
+            className={`px-4 py-2 text-sm font-medium border-b-2 ${
+              activeTab === "productos"
+                ? "border-[var(--primario-amber)] text-[var(--secundario-malta)]"
+                : "border-transparent text-[var(--texto-secundario)]"
+            }`}
+          >
+            Productos
+          </button>
+          <button
+            onClick={() => setActiveTab("categorias")}
+            className={`px-4 py-2 text-sm font-medium border-b-2 ${
+              activeTab === "categorias"
+                ? "border-[var(--primario-amber)] text-[var(--secundario-malta)]"
+                : "border-transparent text-[var(--texto-secundario)]"
+            }`}
+          >
+            Categorías
+          </button>
+        </div>
+
+        {mensaje && (
+          <div className="mb-4 text-sm font-medium" style={{ color: "var(--acento-lupulo)" }}>
+            {mensaje}
+          </div>
+        )}
+
+        {activeTab === "productos" ? (
+          <section>
+            {/* Formulario producto */}
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-lg font-semibold">Gestión de productos</h2>
+              <button
+                onClick={startNuevoProducto}
+                className="px-3 py-1 text-sm rounded-md"
+                style={{
+                  backgroundColor: "var(--primario-amber)",
+                  color: "var(--secundario-malta)",
+                }}
+              >
+                + Nuevo producto
+              </button>
+            </div>
+
+            <form onSubmit={handleProductoSubmit} className="grid gap-3 mb-6 md:grid-cols-2">
+              <div className="flex flex-col gap-1">
+                <label className="text-sm font-medium">Nombre</label>
+                <input
+                  type="text"
+                  name="nombre"
+                  value={productoForm.nombre}
+                  onChange={handleProductoChange}
+                  className="border rounded px-2 py-1 text-sm"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-sm font-medium">Precio</label>
+                <input
+                  type="number"
+                  name="precio"
+                  value={productoForm.precio}
+                  onChange={handleProductoChange}
+                  className="border rounded px-2 py-1 text-sm"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-sm font-medium">Categoría</label>
+                <input
+                  type="text"
+                  name="categoria"
+                  value={productoForm.categoria}
+                  onChange={handleProductoChange}
+                  className="border rounded px-2 py-1 text-sm"
+                  placeholder="Ej: IPA, Stout..."
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-sm font-medium">Imagen (URL)</label>
+                <input
+                  type="text"
+                  name="imagen"
+                  value={productoForm.imagen}
+                  onChange={handleProductoChange}
+                  className="border rounded px-2 py-1 text-sm"
+                  placeholder="/mi-imagen.png"
+                />
+              </div>
+
+              <div className="md:col-span-2 flex flex-col gap-1">
+                <label className="text-sm font-medium">Descripción</label>
+                <textarea
+                  name="descripcion"
+                  value={productoForm.descripcion}
+                  onChange={handleProductoChange}
+                  className="border rounded px-2 py-1 text-sm"
+                  rows={2}
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-md text-sm font-medium"
+                  style={{
+                    backgroundColor: "var(--secundario-malta)",
+                    color: "var(--blanco-puro)",
+                  }}
+                >
+                  {editingProductoId ? "Guardar cambios" : "Agregar producto"}
+                </button>
+              </div>
+            </form>
+
+            {/* Lista de productos */}
+            {loadingProductos ? (
+              <p>Cargando productos...</p>
+            ) : productos.length === 0 ? (
+              <p className="text-sm text-[var(--texto-secundario)]">
+                No hay productos registrados.
+              </p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm border">
+                  <thead>
+                    <tr className="text-left" style={{ backgroundColor: "var(--bg-principal)" }}>
+                      <th className="p-2 border">ID</th>
+                      <th className="p-2 border">Nombre</th>
+                      <th className="p-2 border">Precio</th>
+                      <th className="p-2 border">Categoría</th>
+                      <th className="p-2 border">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {productos.map((prod) => (
+                      <tr key={prod.id} className="border-t">
+                        <td className="p-2 border">{prod.id}</td>
+                        <td className="p-2 border">{prod.nombre}</td>
+                        <td className="p-2 border">${prod.precio}</td>
+                        <td className="p-2 border">{prod.categoria}</td>
+                        <td className="p-2 border">
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => startEditarProducto(prod)}
+                              className="px-2 py-1 rounded text-xs"
+                              style={{
+                                backgroundColor: "var(--primario-amber)",
+                                color: "var(--secundario-malta)",
+                              }}
+                            >
+                              Editar
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleEliminarProducto(prod.id)}
+                              className="px-2 py-1 rounded text-xs"
+                              style={{
+                                backgroundColor: "var(--error)",
+                                color: "var(--blanco-puro)",
+                              }}
+                            >
+                              Eliminar
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+        ) : (
+          <section>
+            {/* Formulario categoría */}
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-lg font-semibold">Gestión de categorías</h2>
+              <button
+                onClick={startNuevaCategoria}
+                className="px-3 py-1 text-sm rounded-md"
+                style={{
+                  backgroundColor: "var(--primario-amber)",
+                  color: "var(--secundario-malta)",
+                }}
+              >
+                + Nueva categoría
+              </button>
+            </div>
+
+            <form onSubmit={handleCategoriaSubmit} className="grid gap-3 mb-6 md:grid-cols-2">
+              <div className="flex flex-col gap-1">
+                <label className="text-sm font-medium">Nombre</label>
+                <input
+                  type="text"
+                  name="nombre"
+                  value={categoriaForm.nombre}
+                  onChange={handleCategoriaChange}
+                  className="border rounded px-2 py-1 text-sm"
+                />
+              </div>
+
+              <div className="md:col-span-2 flex flex-col gap-1">
+                <label className="text-sm font-medium">Descripción</label>
+                <textarea
+                  name="descripcion"
+                  value={categoriaForm.descripcion}
+                  onChange={handleCategoriaChange}
+                  className="border rounded px-2 py-1 text-sm"
+                  rows={2}
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-md text-sm font-medium"
+                  style={{
+                    backgroundColor: "var(--secundario-malta)",
+                    color: "var(--blanco-puro)",
+                  }}
+                >
+                  {editingCategoriaId ? "Guardar cambios" : "Agregar categoría"}
+                </button>
+              </div>
+            </form>
+
+            {/* Lista de categorías */}
+            {loadingCategorias ? (
+              <p>Cargando categorías...</p>
+            ) : categorias.length === 0 ? (
+              <p className="text-sm text-[var(--texto-secundario)]">
+                No hay categorías registradas.
+              </p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm border">
+                  <thead>
+                    <tr className="text-left" style={{ backgroundColor: "var(--bg-principal)" }}>
+                      <th className="p-2 border">ID</th>
+                      <th className="p-2 border">Nombre</th>
+                      <th className="p-2 border">Descripción</th>
+                      <th className="p-2 border">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {categorias.map((cat) => (
+                      <tr key={cat.id} className="border-t">
+                        <td className="p-2 border">{cat.id}</td>
+                        <td className="p-2 border">{cat.nombre}</td>
+                        <td className="p-2 border">{cat.descripcion}</td>
+                        <td className="p-2 border">
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => startEditarCategoria(cat)}
+                              className="px-2 py-1 rounded text-xs"
+                              style={{
+                                backgroundColor: "var(--primario-amber)",
+                                color: "var(--secundario-malta)",
+                              }}
+                            >
+                              Editar
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleEliminarCategoria(cat.id)}
+                              className="px-2 py-1 rounded text-xs"
+                              style={{
+                                backgroundColor: "var(--error)",
+                                color: "var(--blanco-puro)",
+                              }}
+                            >
+                              Eliminar
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+        )}
+      </div>
+    </section>
+  );
+}
