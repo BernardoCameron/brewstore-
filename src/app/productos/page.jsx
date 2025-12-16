@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { useCart } from "@/context/CartContext";
+import ProductCard from "@/components/ProductCard";
 
 export default function ProductosPage() {
   const [productos, setProductos] = useState([]);
@@ -151,75 +152,13 @@ export default function ProductosPage() {
         ) : productosPaginados.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {productosPaginados.map((producto) => (
-              <div
+              <ProductCard
                 key={producto.id}
-                className="card card-custom p-6 flex flex-col justify-between"
-                style={{
-                  minHeight: "480px",
-                  borderRadius: "18px",
-                }}
-              >
-                <Image
-                  src={producto.imagen || "/ipa-dorada.png"}
-                  alt={producto.nombre}
-                  width={400}
-                  height={300}
-                  className="rounded-lg mx-auto mb-4 object-cover"
-                />
-
-                <div>
-                  <h5
-                    className="font-semibold text-lg mb-1"
-                    style={{ color: "var(--secundario-malta)" }}
-                  >
-                    {producto.nombre}
-                  </h5>
-                  <p className="text-sm mb-2" style={{ color: "var(--texto-secundario)" }}>
-                    {producto.descripcion}
-                  </p>
-                  <p className="font-bold mb-3" style={{ color: "var(--acento-lupulo)" }}>
-                    {producto.precio?.toLocaleString("es-CL")} CLP
-                  </p>
-                </div>
-
-                <div className="flex justify-between items-center mt-2">
-                  <a
-                    href={`/producto/${producto.id}`}
-                    className="text-sm font-medium hover:underline"
-                    style={{ color: "var(--secundario-malta)" }}
-                  >
-                    Ver producto
-                  </a>
-
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center border rounded-md overflow-hidden">
-                      <button
-                        onClick={() => cambiarCantidad(producto.id, -1)}
-                        className="px-2 font-bold"
-                        style={{ color: "var(--secundario-malta)" }}
-                      >
-                        −
-                      </button>
-                      <span className="px-3 select-none">{cantidades[producto.id] || 1}</span>
-                      <button
-                        onClick={() => cambiarCantidad(producto.id, 1)}
-                        className="px-2 font-bold"
-                        style={{ color: "var(--secundario-malta)" }}
-                      >
-                        +
-                      </button>
-                    </div>
-
-                    <button
-                      onClick={() => addToCart(producto, cantidades[producto.id] || 1)}
-                      className="btn-primary-custom text-sm px-4 py-2 rounded-full font-semibold"
-                      title="Añadir al carrito"
-                    >
-                      Añadir
-                    </button>
-                  </div>
-                </div>
-              </div>
+                producto={producto}
+                cantidad={cantidades[producto.id] || 1}
+                onCantidadChange={cambiarCantidad}
+                onAddToCart={(item, qty) => addToCart(item, qty)}
+              />
             ))}
           </div>
         ) : (
