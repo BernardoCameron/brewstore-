@@ -2,9 +2,18 @@
 import Image from "next/image";
 import { useCart } from "@/context/CartContext";
 import { X, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export default function CartDrawer() {
   const { cart, isOpen, toggleCart, updateQuantity, removeFromCart, total } = useCart();
+
+  const router = useRouter();
+
+  const handleCheckout = () => {
+    if (!cart.length) return;
+    toggleCart();
+    router.push("/checkout");
+  };
 
   if (!isOpen) return null;
 
@@ -88,7 +97,10 @@ export default function CartDrawer() {
               <span>{total.toLocaleString("es-CL")} CLP</span>
             </div>
 
-            <button className="w-full bg-[var(--primario-amber)] text-[var(--secundario-malta)] font-bold py-3 rounded-full hover:bg-[#e6ac00] transition">
+            <button
+              className="w-full bg-[var(--primario-amber)] text-[var(--secundario-malta)] font-bold py-3 rounded-full hover:bg-[#e6ac00] transition"
+              onClick={handleCheckout}
+            >
               Finalizar Compra
             </button>
 
